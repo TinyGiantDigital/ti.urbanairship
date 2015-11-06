@@ -94,6 +94,7 @@ ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 - (void)viewDidLoad {
     [self.webView setDataDetectorTypes:UIDataDetectorTypeAll];
+    [super viewDidLoad];
 }
 
 - (void)viewWillAppear:(BOOL)animated {

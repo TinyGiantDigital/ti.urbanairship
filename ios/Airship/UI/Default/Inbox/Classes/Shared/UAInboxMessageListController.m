@@ -181,6 +181,7 @@
     self.setOfUnreadMessagesInSelection = nil;
     self.deleteItem = nil;
     self.markAsReadButtonItem = nil;
+    [super viewDidUnload];
 }
 
 - (BOOL)shouldAutorotateToInterfaceOrientation:(UIInterfaceOrientation)interfaceOrientation {

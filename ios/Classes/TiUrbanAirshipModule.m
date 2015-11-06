@@ -172,7 +172,7 @@
 -(void)registerDevice:(id)arg
 {
 	ENSURE_SINGLE_ARG(arg, NSString);
-	ENSURE_UI_THREAD_1_ARG(arg);
+	ENSURE_UI_THREAD(registerDevice, arg);
 	
     // NOTE: We are not using the UA registerForRemoteNotificationTypes method since we rely on the developer
     // calling the Ti.Network.registerForRemoteNotifications method. The following call will generate an
@@ -212,7 +212,7 @@
 
 -(void)displayInbox:(id)args
 {
-	ENSURE_UI_THREAD_1_ARG(args);
+	ENSURE_UI_THREAD(displayInbox,args);
 	
 	[self initializeIfNeeded];		
 
@@ -225,7 +225,7 @@
 
 -(void)hideInbox:(id)arg
 {
-	ENSURE_UI_THREAD_1_ARG(arg);
+	ENSURE_UI_THREAD(hideInbox,arg);
 	
 	[self initializeIfNeeded];
 	
@@ -237,7 +237,7 @@
 	// The only argument to this method is the userInfo dictionary received from
 	// the remote notification
 	
-	ENSURE_UI_THREAD_1_ARG(arg);	
+	ENSURE_UI_THREAD(handleNotification,arg);
 	
 	[self initializeIfNeeded];
 	

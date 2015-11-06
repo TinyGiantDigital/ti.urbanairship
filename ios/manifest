@@ -2,7 +2,7 @@
 # this is your module manifest and used by Titanium
 # during compilation, packaging, distribution, etc.
 #
-version: 3.1.1
+version: 3.2.0
 apiversion: 2
 architectures: armv7 i386 x86_64 arm64
 description: Urban Airship module for push notifications
@@ -15,4 +15,4 @@ name: urbanairship
 moduleid: ti.urbanairship
 guid: d00fbe22-e01d-4ca5-b11b-133155320625
 platform: iphone
-minsdk: 3.4.1.GA
+minsdk: 5.0.0
