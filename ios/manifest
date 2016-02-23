@@ -2,11 +2,11 @@
 # this is your module manifest and used by Titanium
 # during compilation, packaging, distribution, etc.
 #
-version: 3.2.0
+version: 4.0.0
 apiversion: 2
 architectures: armv7 i386 x86_64 arm64
 description: Urban Airship module for push notifications
-author: Jeff English
+author: Jeff English, Hans Knoechel
 license: Apache License, Version 2.0
 copyright: Copyright (c) 2010-2014 by Appcelerator, Inc.
 

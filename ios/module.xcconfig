@@ -10,7 +10,6 @@
 //
 // How to add a Framework (example)
 //
-OTHER_LDFLAGS=$(inherited) -ObjC -framework security -framework CoreTelephony
 // Adding a framework for a specific version(s) of iPhone:
 //
 // OTHER_LDFLAGS[sdk=iphoneos4*]=$(inherited) -framework Foo
@@ -24,3 +23,4 @@ OTHER_LDFLAGS=$(inherited) -ObjC -framework security -framework CoreTelephony
 //
 // IMPORTANT NOTE: always use $(inherited) in your overrides
 // 
+OTHER_LDFLAGS=$(inherited) -weak_framework CoreData -weak_framework PassKit -weak_framework CoreTelephony

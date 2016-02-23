@@ -1,5 +1,5 @@
 /*
- Copyright 2009-2013 Urban Airship Inc. All rights reserved.
+ Copyright 2009-2015 Urban Airship Inc. All rights reserved.
 
  Redistribution and use in source and binary forms, with or without
  modification, are permitted provided that the following conditions are met:
@@ -7,11 +7,11 @@
  1. Redistributions of source code must retain the above copyright notice, this
  list of conditions and the following disclaimer.
 
- 2. Redistributions in binaryform must reproduce the above copyright notice,
+ 2. Redistributions in binary form must reproduce the above copyright notice,
  this list of conditions and the following disclaimer in the documentation
- and/or other materials provided withthe distribution.
+ and/or other materials provided with the distribution.
 
- THIS SOFTWARE IS PROVIDED BY THE URBAN AIRSHIP INC``AS IS'' AND ANY EXPRESS OR
+ THIS SOFTWARE IS PROVIDED BY THE URBAN AIRSHIP INC ``AS IS'' AND ANY EXPRESS OR
  IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
  MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO
  EVENT SHALL URBAN AIRSHIP INC OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
@@ -24,37 +24,49 @@
  */
 
 #import "UAGlobal.h"
-#import "UAObservable.h"
 #import "UAHTTPConnection.h"
+#import "UAChannelRegistrar.h"
+#import "UANamedUser.h"
+
+NS_ASSUME_NONNULL_BEGIN
 
 //---------------------------------------------------------------------------------------
-// UAPushUIProtocol Protocol
+// UARegistrationDelegate
 //---------------------------------------------------------------------------------------
 
 /**
- * Implement this protocol to provide a custom UI for use with UAPush. The default
- * implementation, UAPushUI, is provided in the library's sample UI distribution.
+ * Implement this protocol and add as a [UAPush registrationDelegate] to receive
+ * registration success and failure callbacks.
+ *
  */
-@protocol UAPushUIProtocol
+@protocol UARegistrationDelegate <NSObject>
+@optional
 
 /**
- * Open a push settings screen. The default implementation provides settings for toggling push
- * on and off and managing quiet time.
+ * Called when the device channel registers with Urban Airship. Successful
+ * registrations could be disabling push, enabling push, or updating the device
+ * registration settings.
  *
- * @param viewController The parent view controller.
- * @param animated `YES` to animate the display, otherwise `NO`
+ * The device token will only be available once the application successfully
+ * registers with APNS.
+ *
+ * When registration finishes in the background, any async tasks that are triggered
+ * from this call should request a background task.
+ * @param channelID The channel ID string.
+ * @param deviceToken The device token string.
  */
-+ (void)openApnsSettings:(UIViewController *)viewController
-                animated:(BOOL)animated;
+- (void)registrationSucceededForChannelID:(NSString *)channelID deviceToken:(NSString *)deviceToken;
 
 /**
- * Close the push settings screen.
+ * Called when the device channel failed to register with Urban Airship.
  *
- * @param animated `YES` to animate the view transition, otherwise `NO`
+ * When registration finishes in the background, any async tasks that are triggered
+ * from this call should request a background task.
  */
-+ (void)closeApnsSettingsAnimated:(BOOL)animated;
+- (void)registrationFailed;
 
 @end
+
 
 //---------------------------------------------------------------------------------------
 // UAPushNotificationDelegate Protocol
@@ -86,7 +98,6 @@
  */
 - (void)playNotificationSound:(NSString *)soundFilename;
 
-
 /**
  * Called when a push notification is received in the foreground with a badge number.
  * @param badgeNumber The badge number to display
@@ -95,11 +106,11 @@
 
 /**
  * Called when a push notification is received while the app is running in the foreground.
+ * Overridden by receivedForegroundNotification:fetchCompletionHandler.
  *
  * @param notification The notification dictionary.
  */
 - (void)receivedForegroundNotification:(NSDictionary *)notification;
-
 
 /**
  * Called when a push notification is received while the app is running in the foreground 
@@ -108,7 +119,17 @@
  * @param notification The notification dictionary.
  * @param completionHandler Should be called with a UIBackgroundFetchResult as soon as possible, so the system can accurately estimate its power and data cost.
  */
-- (void)receivedForegroundNotification:(NSDictionary *)notification fetchCompletionHandler:(void (^)(UIBackgroundFetchResult result))completionHandler;
+- (void)receivedForegroundNotification:(NSDictionary *)notification
+                fetchCompletionHandler:(void (^)(UIBackgroundFetchResult result))completionHandler;
+
+/**
+ * Called when a push notification is received while the app is running in the background
+ * for applications with the "remote-notification" background mode.  
+ * Overridden by receivedBackgroundNotification:fetchCompletionHandler.
+ *
+ * @param notification The notification dictionary.
+ */
+- (void)receivedBackgroundNotification:(NSDictionary *)notification;
 
 /**
  * Called when a push notification is received while the app is running in the background
@@ -117,23 +138,16 @@
  * @param notification The notification dictionary.
  * @param completionHandler Should be called with a UIBackgroundFetchResult as soon as possible, so the system can accurately estimate its power and data cost.
  */
-- (void)receivedBackgroundNotification:(NSDictionary *)notification fetchCompletionHandler:(void (^)(UIBackgroundFetchResult result))completionHandler;
-
-/**
- * Called when a push notification is received while the app is running in the background.
- *
- * @param notification The notification dictionary.
- */
-- (void)receivedBackgroundNotification:(NSDictionary *)notification;
-
+- (void)receivedBackgroundNotification:(NSDictionary *)notification
+                fetchCompletionHandler:(void (^)(UIBackgroundFetchResult result))completionHandler;
 
 /**
  * Called when the app is started or resumed because a user opened a notification.
+ * Overridden by launchedFromNotification:fetchCompletionHandler.
  *
  * @param notification The notification dictionary.
  */
 - (void)launchedFromNotification:(NSDictionary *)notification;
-
 
 /**
  * Called when the app is started or resumed because a user opened a notification
@@ -142,88 +156,34 @@
  * @param notification The notification dictionary.
  * @param completionHandler Should be called with a UIBackgroundFetchResult as soon as possible, so the system can accurately estimate its power and data cost.
  */
-- (void)launchedFromNotification:(NSDictionary *)notification fetchCompletionHandler:(void (^)(UIBackgroundFetchResult result))completionHandler;
+- (void)launchedFromNotification:(NSDictionary *)notification
+          fetchCompletionHandler:(void (^)(UIBackgroundFetchResult result))completionHandler;
+
+/**
+ * Called when the app is started from a user notification action button with foreground activation mode.
+ *
+ * @param notification The notification dictionary.
+ * @param identifier The user notification action identifier.
+ * @param completionHandler Should be called as soon as possible.
+ */
+- (void)launchedFromNotification:(NSDictionary *)notification
+                actionIdentifier:(NSString *)identifier
+               completionHandler:(void (^)())completionHandler;
+
+
+/**
+ * Called when the app is started from a user notification action button with background activation mode.
+ *
+ * @param notification The notification dictionary.
+ * @param identifier The user notification action identifier.
+ * @param completionHandler Should be called as soon as possible.
+ */
+- (void)receivedBackgroundNotification:(NSDictionary *)notification
+                      actionIdentifier:(NSString *)identifier
+                     completionHandler:(void (^)())completionHandler;
+
 
 @end
-
-//---------------------------------------------------------------------------------------
-// UARegistrationDelegate Protocol
-//---------------------------------------------------------------------------------------
-
-/**
- * Implement this protocol and add as a [UAPush registrationDelegate] to receive
- * device token registration success and failure callbacks.
- *
- */
-@protocol UARegistrationDelegate<NSObject>
-@optional
-
-/**
- * Called when the device token is successfully registered with Urban Airship.
- */
-- (void)registerDeviceTokenSucceeded;
-
-/**
- * Called when the device token registration fails.
- *
- * @param request The failed request.
- */
-- (void)registerDeviceTokenFailed:(UAHTTPRequest *)request;
-
-/**
- * Called when the device token is successfully deactivated with Urban Airship.
- */
-- (void)unregisterDeviceTokenSucceeded;
-
-/**
- * Called when the device token deactivation fails and cannot be retried.
- *
- * @param request The failed request.
- */
-- (void)unregisterDeviceTokenFailed:(UAHTTPRequest *)request;
-@end
-
-
-
-//---------------------------------------------------------------------------------------
-// UARegistrationObserver Protocol
-//---------------------------------------------------------------------------------------
-
-/**
- * Implement this protocol and register with the UAPush shared instance to receive
- * device token registration success and failure callbacks.
- *
- * @deprecated As of version 3.0. Replaced with `UARegistrationDelegate` protocol.
- */
-__attribute__((deprecated("As of version 3.0")))
-@protocol UARegistrationObserver
-@optional
-
-/**
- * Called when the device token is successfully registered with Urban Airship.
- */
-- (void)registerDeviceTokenSucceeded;
-
-/**
- * Called when the device token registration fails.
- *
- * @param request The failed request.
- */
-- (void)registerDeviceTokenFailed:(UAHTTPRequest *)request;
-
-/**
- * Called when the device token is successfully deactivated with Urban Airship.
- */
-- (void)unregisterDeviceTokenSucceeded;
-
-/**
- * Called when the device token deactivation fails and cannot be retried.
- *
- * @param request The failed request.
- */
-- (void)unregisterDeviceTokenFailed:(UAHTTPRequest *)request;
-@end
-
 
 
 //---------------------------------------------------------------------------------------
@@ -234,45 +194,10 @@ __attribute__((deprecated("As of version 3.0")))
  * This singleton provides an interface to the functionality provided by the Urban Airship iOS Push API.
  */
 #pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wdeprecated-declarations"
-@interface UAPush : UAObservable
-#pragma clang diagnostic pop
+@interface UAPush : NSObject <UAChannelRegistrarDelegate>
 
 
-SINGLETON_INTERFACE(UAPush);
-
-///---------------------------------------------------------------------------------------
-/// @name UAPush User Interface
-///---------------------------------------------------------------------------------------
-
-
-/**
- * Use a custom UI implementation.
- * Replaces the default push UI, defined in `UAPushUI`, with
- * a custom implementation.
- *
- * @see UAPushUIProtocol
- *
- * @param customUIClass An implementation of UAPushUIProtocol
- */
-+ (void)useCustomUI:(Class)customUIClass;
-
-/**
- * Open the push settings screen. The default implementation provides settings for toggling push
- * on and off and managing quiet time.
- *
- * @param viewController The parent view controller.
- * @param animated `YES` to animate the display, otherwise `NO`
- */
-+ (void)openApnsSettings:(UIViewController *)viewController
-                animated:(BOOL)animated;
-
-/**
- * Close the push settings screen.
- *
- * @param animated `YES` to animate the view transition, otherwise `NO`
- */
-+ (void)closeApnsSettingsAnimated:(BOOL)animated;
++ (null_unspecified instancetype)shared __attribute__((deprecated("As of version 6.0.0. Use [UAirship push] instead.")));
 
 
 ///---------------------------------------------------------------------------------------
@@ -280,49 +205,142 @@ SINGLETON_INTERFACE(UAPush);
 ///---------------------------------------------------------------------------------------
 
 /**
- * Enables/disables push notifications on this device through Urban Airship. Defaults to `YES`.
+ * Enables/disables background remote notifications on this device through Urban Airship.
+ * Defaults to `YES`.
  */
-@property (nonatomic) BOOL pushEnabled;
+@property (nonatomic, assign) BOOL backgroundPushNotificationsEnabled;
 
-/** 
- * Sets the default value for pushEnabled. The default is `YES`. After the pushEnabled
- * value has been directly set, this value has no effect.
- *
- * @param enabled The default value for push enabled
+/**
+ * Sets the default value for backgroundPushNotificationsEnabled. The default is `YES`.
+ * After the backgroundPushNotificationsEnabled value has been directly set, this
+ * value has no effect.
  */
-+ (void)setDefaultPushEnabledValue:(BOOL)enabled;
+@property (nonatomic, assign) BOOL backgroundPushNotificationsEnabledByDefault;
+
+/**
+ * Enables/disables user notifications on this device through Urban Airship.
+ * Defaults to `NO`. Once set to `YES`, the user will be prompted for remote notifications.
+ *
+ * On iOS 8+, we recommend that you do not change this value to `NO` and instead direct users to
+ * the iOS Settings App. As such, the transition from `YES` to `NO` is disabled by default on iOS 8+.
+ * Please see requireSettingsAppToDisableUserNotifications for details.
+ */
+@property (nonatomic, assign) BOOL userPushNotificationsEnabled;
+
+/**
+ * Enables/disables sending the device token during channel registration.
+ * Defaults to `YES`. If set to `NO`, the app will not be able to receive push
+ * notifications.
+ */
+@property (nonatomic, assign) BOOL pushTokenRegistrationEnabled;
+
+/**
+ * This setting controls the underlying behavior of the SDK when user notifications are disabled.
+ * When set to `NO` and user notifications are disabled with the userPushNotificationsEnabled
+ * property, this SDK will mark the device as opted-out on the Urban Airship server but the OS-level
+ * settings will still show this device as able to receive user notifications.
+ *
+ * This is a temporary flag to work around an issue in iOS 8 where
+ * unregistering user notification types may prevent the device from being able to
+ * register with other types without a device restart. It will be removed once
+ * the issue is addressed in iOS 8.
+ *
+ * This setting defaults to `YES` due to the new flag requireSettingsAppToDisableUserNotifications.
+ * To enable UA SDK 5 behavior, set this flag and requireSettingsAppToDisableUserNotifications
+ * to `NO`.
+ *
+ */
+@property (nonatomic, assign) BOOL allowUnregisteringUserNotificationTypes;
+
+/**
+ * This setting controls the behavior of the userPushNotificationsEnabled setting. If set to `YES`, the
+ * application will not be allowed to set userPushNotificationsEnabled to `NO`, and instead, the user should
+ * be directed to the iOS Settings app via the UIApplicationOpenSettingsURLString URL constant. The iOS
+ * Settings app is the preferred method of disabling user notifications as of iOS 8.
+ * 
+ * The setting defaults to `YES` on iOS 8+. Changing this setting to `NO` could allow notifications with user-visible components
+ * (badge, alert, or sound) to be processed by the OS if the notification also has a background `content-available`
+ * flag in the `aps` section of the notification.
+ *
+ * On versions of iOS prior to iOS 8, this flag will always return `NO`. Those iOS versions do not allow linking
+ * to the Settings app and are unaffected by the opt-out after opt-in bug.
+ *
+ * To open the iOS Settings app directly to your application's settings:
+ * `[[UIApplication sharedApplication] openURL:[NSURL URLWithString:UIApplicationOpenSettingsURLString]]`
+ */
+@property (nonatomic, assign) BOOL requireSettingsAppToDisableUserNotifications;
+
+
+/**
+ * Sets the default value for userPushNotificationsEnabled. The default is `NO`.
+ * After the userPushNotificationsEnabled value has been directly set, this value
+ * has no effect.
+ */
+@property (nonatomic, assign) BOOL userPushNotificationsEnabledByDefault;
 
 /**
  * The device token for this device, as a hex string.
  */
-@property (nonatomic, copy, readonly) NSString *deviceToken;
+@property (nonatomic, copy, readonly, nullable) NSString *deviceToken;
 
 /**
- * Notification types this app will request from APNS. If push is enabled, changes to this value will
- * take effect the next time the app registers with [UAPush registerForRemoteNotifications].
+ * The channel ID for this device.
+ */
+@property (nonatomic, copy, readonly, nullable) NSString *channelID;
+
+/**
+ * Notification types this app will request from APNS. Changes to this value
+ * will not take effect the next time the app registers with
+ * updateRegistration.
+ *
+ * Defaults to alert, sound and badge.
+ *
+ * @deprecated As of version 5.0. Replaced with userNotificationTypes.
+ */
+@property (nonatomic, assign) UIRemoteNotificationType notificationTypes __attribute__((deprecated("As of version 5.0")));
+
+/**
+ * User Notification types this app will request from APNS. Changes to this value
+ * will not take effect the next time the app registers with
+ * updateRegistration.
  *
  * Defaults to alert, sound and badge.
  */
-@property (nonatomic, assign) UIRemoteNotificationType notificationTypes;
+@property (nonatomic, assign) UIUserNotificationType userNotificationTypes;
 
 /**
- * Set a delegate that implements the UAPushNotificationDelegate protocol. If not
- * set, a default implementation is provided (UAPushNotificationHandler).
- */
-@property (nonatomic, weak) id<UAPushNotificationDelegate> pushNotificationDelegate;
-
-/**
- * Set a delegate that implements the UAPushNotificationDelegate protocol. If not
- * set, a default implementation is provided (UAPushNotificationHandler).
+ * Custom user notification categories. Urban Airship default user notification
+ * categories will be unaffected by this field.
  *
- * @deprecated As of version 3.0. Replaced with [UAPush pushNotificationDelegate] property.
+ * Changes to this value will not take effect the next time the app registers
+ * with updateRegistration.
  */
-@property (nonatomic, weak) id<UAPushNotificationDelegate> delegate __attribute__((deprecated("As of version 3.0")));
+@property (nonatomic, strong) NSSet *userNotificationCategories;
+
+/**
+ * Sets authorization required for the default Urban Airship categories. Only applies
+ * to background user notification actions.
+ *
+ * Changes to this value will not take effect the next time the app registers
+ * with updateRegistration.
+ */
+@property (nonatomic, assign) BOOL requireAuthorizationForDefaultCategories;
+
+/**
+ * Set a delegate that implements the UAPushNotificationDelegate protocol.
+ */
+@property (nonatomic, weak, nullable) id<UAPushNotificationDelegate> pushNotificationDelegate;
 
 /**
  * Set a delegate that implements the UARegistrationDelegate protocol.
  */
-@property (nonatomic, assign) id<UARegistrationDelegate> registrationDelegate;
+@property (nonatomic, weak, nullable) id<UARegistrationDelegate> registrationDelegate;
+
+/**
+ * Notification that launched the application
+ */
+@property (nonatomic, readonly, strong, nullable) NSDictionary *launchNotification;
+
 
 ///---------------------------------------------------------------------------------------
 /// @name Autobadge
@@ -332,7 +350,7 @@ SINGLETON_INTERFACE(UAPush);
  * Toggle the Urban Airship auto-badge feature. Defaults to `NO` If enabled, this will update the
  * badge number stored by Urban Airship every time the app is started or foregrounded.
  */
-@property (nonatomic, assign) BOOL autobadgeEnabled;
+@property (nonatomic, assign, getter=isAutobadgeEnabled) BOOL autobadgeEnabled;
 
 /**
  * Sets the badge number on the device and on the Urban Airship server.
@@ -347,19 +365,39 @@ SINGLETON_INTERFACE(UAPush);
  */
 - (void)resetBadge;
 
+/**
+ * Gets the current enabled notification types.
+ * @return The current enabled notification types.
+ */
+- (UIUserNotificationType)currentEnabledNotificationTypes;
+
+
 ///---------------------------------------------------------------------------------------
 /// @name Alias
 ///---------------------------------------------------------------------------------------
  
 /** Alias for this device */
-@property (nonatomic, copy) NSString *alias;
+@property (nonatomic, copy, nullable) NSString *alias;
+
+///---------------------------------------------------------------------------------------
+/// @name Named User
+///---------------------------------------------------------------------------------------
+
+/**
+ * Named user for this device.
+ */
+@property (nonatomic, strong) UANamedUser *namedUser;
 
 ///---------------------------------------------------------------------------------------
 /// @name Tags
 ///---------------------------------------------------------------------------------------
 
 /** Tags for this device. */
+#if __has_feature(objc_generics)
+@property (nonatomic, copy) NSArray<NSString *> *tags;
+#else
 @property (nonatomic, copy) NSArray *tags;
+#endif
 
 /**
  * Allows setting tags from the device. Tags can be set from either the server or the device, but
@@ -368,8 +406,20 @@ SINGLETON_INTERFACE(UAPush);
  * 
  * Set this to `NO` to prevent the device from sending any tag information to the server when using
  * server-side tagging. Defaults to `YES`.
+ *
+ * @deprecated As of version 6.1.0. Replaced with channelTagRegistrationEnabled.
  */
-@property (nonatomic, assign) BOOL deviceTagsEnabled;
+@property (nonatomic, assign) BOOL deviceTagsEnabled __attribute__((deprecated("As of version 6.1.0.")));
+
+/**
+ * Allows setting tags from the device. Tags can be set from either the server or the device, but
+ * not both (without synchronizing the data), so use this flag to explicitly enable or disable
+ * the device-side flags.
+ *
+ * Set this to `NO` to prevent the device from sending any tag information to the server when using
+ * server-side tagging. Defaults to `YES`.
+ */
+@property (nonatomic, assign, getter=isChannelTagRegistrationEnabled) BOOL channelTagRegistrationEnabled;
 
 /**
  * Adds a tag to the list of tags for the device.
@@ -381,7 +431,7 @@ SINGLETON_INTERFACE(UAPush);
  *
  * @param tag Tag to be added
  */
-- (void)addTagToCurrentDevice:(NSString *)tag;
+- (void)addTag:(NSString *)tag;
 
 /**
  * Adds a group of tags to the current list of device tags. To update the server, make all of your
@@ -392,8 +442,11 @@ SINGLETON_INTERFACE(UAPush);
  *
  * @param tags Array of new tags
  */
-
-- (void)addTagsToCurrentDevice:(NSArray *)tags;
+#if __has_feature(objc_generics)
+- (void)addTags:(NSArray<NSString *> *)tags;
+#else
+- (void)addTags:(NSArray *)tags;
+#endif
 
 /**
  * Removes a tag from the current tag list. To update the server, make all of your changes, then call
@@ -404,7 +457,7 @@ SINGLETON_INTERFACE(UAPush);
  *
  * @param tag Tag to be removed
  */
-- (void)removeTagFromCurrentDevice:(NSString *)tag;
+- (void)removeTag:(NSString *)tag;
 
 /**
  * Removes a group of tags from a device. To update the server, make all of your changes, then call
@@ -412,10 +465,44 @@ SINGLETON_INTERFACE(UAPush);
  *
  * @note When updating multiple server-side values (tags, alias, time zone, quiet time), set the
  * values first, then call `updateRegistration`. Batching these calls improves performance.
- * 
+ *
  * @param tags Array of tags to be removed
  */
-- (void)removeTagsFromCurrentDevice:(NSArray *)tags;
+#if __has_feature(objc_generics)
+- (void)removeTags:(NSArray<NSString *> *)tags;
+#else
+- (void)removeTags:(NSArray *)tags;
+#endif
+
+///---------------------------------------------------------------------------------------
+/// @name Tag Groups
+///---------------------------------------------------------------------------------------
+
+/**
+ * Add tags to channel tag groups. To update the server,
+ * make all of your changes, then call `updateRegistration`.
+ *
+ * @param tags Array of tags to add.
+ * @param tagGroupID Tag group ID string.
+ */
+#if __has_feature(objc_generics)
+- (void)addTags:(NSArray<NSString *> *)tags group:(NSString *)tagGroupID;
+#else
+- (void)addTags:(NSArray *)tags group:(NSString *)tagGroupID;
+#endif
+
+/**
+ * Removes tags from channel tag groups. To update the server,
+ * make all of your changes, then call `updateRegistration`.
+ *
+ * @param tags Array of tags to remove.
+ * @param tagGroupID Tag group ID string.
+ */
+#if __has_feature(objc_generics)
+- (void)removeTags:(NSArray<NSString *> *)tags group:(NSString *)tagGroupID;
+#else
+- (void)removeTags:(NSArray *)tags group:(NSString *)tagGroupID;
+#endif
 
 ///---------------------------------------------------------------------------------------
 /// @name Quiet Time
@@ -424,69 +511,49 @@ SINGLETON_INTERFACE(UAPush);
 /**
  * Quiet time settings for this device.
  */
-@property (nonatomic, copy, readonly) NSDictionary *quietTime;
+@property (nonatomic, copy, readonly, nullable) NSDictionary *quietTime;
 
 /**
- * Time Zone for quiet time.
+ * Time Zone for quiet time. If the time zone is not set, the current
+ * local time zone is returned.
  */
-@property (nonatomic, strong) NSTimeZone *timeZone; /* getter = timeZone, setter = setTimeZone: */
+@property (nonatomic, strong) NSTimeZone *timeZone;
 
 /**
  * Enables/Disables quiet time
  */
-@property (nonatomic, assign) BOOL quietTimeEnabled;
+@property (nonatomic, assign, getter=isQuietTimeEnabled) BOOL quietTimeEnabled;
 
 /**
- * Change quiet time for current device token, only take hh:mm into account. Update the server
- * after making changes to the quiet time with the `updateRegistration` call. 
- * Batching these calls improves API and client performance.
- * 
- * @warning The behavior of this method changed in 1.3.0
- * This method no longer automatically enables quiet time, and does not automatically update
- * the server. Please refer to `quietTimeEnabled` and `updateRegistration` methods for
- * more information
- * 
- * @param from Date for start of quiet time (HH:MM are used)
- * @param to Date for end of quiet time (HH:MM are used)
- * @param tz The time zone for the from and to dates
+ * Sets the quiet time start and end time.  The start and end time does not change
+ * if the time zone changes.  To set the time zone, see 'timeZone'.
+ *
+ * Update the server after making changes to the quiet time with the
+ * `updateRegistration` call. Batching these calls improves API and client performance.
+ *
+ * @warning This method does not automatically enable quiet time and does not
+ * automatically update the server. Please refer to `quietTimeEnabled` and 
+ * `updateRegistration` methods for more information.
+ *
+ * @param startHour Quiet time start hour. Only 0-23 is valid.
+ * @param startMinute Quiet time start minute. Only 0-59 is valid.
+ * @param endHour Quiet time end hour. Only 0-23 is valid.
+ * @param endMinute Quiet time end minute. Only 0-59 is valid.
  */
-- (void)setQuietTimeFrom:(NSDate *)from to:(NSDate *)to withTimeZone:(NSTimeZone *)tz;
+-(void)setQuietTimeStartHour:(NSUInteger)startHour
+                 startMinute:(NSUInteger)startMinute
+                     endHour:(NSUInteger)endHour
+                   endMinute:(NSUInteger)endMinute;
 
 
 ///---------------------------------------------------------------------------------------
-/// @name Registration
+/// @name Channel Registration
 ///---------------------------------------------------------------------------------------
 
 /**
- * This registers the device token and all current associated Urban Airship custom
- * features that are currently set.
- * 
- * Features set with this call if available:
- *  
- * - tags
- * - alias
- * - quiet time
- * - autobadge
- * 
- * Add a `UARegistrationDelegate` to `UAPush` to received success and failure callbacks.
- *
- * @param token The device token to register.
+ * Enables channel creation if channelCreationDelayEnabled was set to `YES` in the config.
  */
-- (void)registerDeviceToken:(NSData *)token;
-
-/**
- * Register the device for remote notifications (see Apple documentation for more
- * detail).
- *
- * @param types Bitmask of UIRemoteNotificationType types
- */
-- (void)registerForRemoteNotificationTypes:(UIRemoteNotificationType)types;
-
-/**
- * Register the device for remote notifications using the types set in [UAPush notificationTypes] (see Apple documentation for more
- * detail).
- */
-- (void)registerForRemoteNotifications;
+- (void)enableChannelCreation;
 
 /**
  * Registers or updates the current registration with an API call. If push notifications are
@@ -497,7 +564,7 @@ SINGLETON_INTERFACE(UAPush);
 - (void)updateRegistration;
 
 ///---------------------------------------------------------------------------------------
-/// @name Receiving Notifications
+/// @name AppDelegate hooks
 ///---------------------------------------------------------------------------------------
 
 /**
@@ -507,7 +574,8 @@ SINGLETON_INTERFACE(UAPush);
  * @param notification The notification payload, as passed to your application delegate.
  * @param state The application state at the time the notification was received.
  */
-- (void)handleNotification:(NSDictionary *)notification applicationState:(UIApplicationState)state;
+- (void)appReceivedRemoteNotification:(NSDictionary *)notification
+                     applicationState:(UIApplicationState)state;
 
 /**
  * Handle incoming push notifications. This method will record push conversions, parse the notification
@@ -517,7 +585,53 @@ SINGLETON_INTERFACE(UAPush);
  * @param state The application state at the time the notification was received.
  * @param completionHandler Should be called with a UIBackgroundFetchResult as soon as possible, so the system can accurately estimate its power and data cost.
  */
-- (void)handleNotification:(NSDictionary *)notification applicationState:(UIApplicationState)state fetchCompletionHandler:(void (^)(UIBackgroundFetchResult result))completionHandler;
+- (void)appReceivedRemoteNotification:(NSDictionary *)notification
+                     applicationState:(UIApplicationState)state
+               fetchCompletionHandler:(nullable void (^)(UIBackgroundFetchResult result))completionHandler;
 
+/**
+ * Handle device token registration. Associates the
+ * token with the channel and update the channel registration.
+ *
+ * Add a `UARegistrationDelegate` to `UAPush` to received success and failure callbacks.
+ *
+ * @param token The device token to register.
+ */
+- (void)appRegisteredForRemoteNotificationsWithDeviceToken:(NSData *)token;
+
+/**
+ * Handles user notification settings registration.
+ */
+- (void)appRegisteredUserNotificationSettings;
+
+/**
+ * Handle interactive notification actions.
+ *
+ * @param identifier The identifier of the button that was triggered.
+ * @param notification The notification payload, as passed to your application delegate.
+ * @param state The application state at the time the notification was received.
+ * @param completionHandler The completion handler.
+ */
+- (void)appReceivedActionWithIdentifier:(NSString *)identifier
+                           notification:(NSDictionary *)notification
+                       applicationState:(UIApplicationState)state
+                      completionHandler:(void (^)())completionHandler;
+
+/**
+ * Handle interactive notification actions with response info.
+ *
+ * @param identifier The identifier of the button that was triggered.
+ * @param notification The notification payload, as passed to your application delegate.
+ * @param responseInfo The response info, as passed to your application delegate.
+ * @param state The application state at the time the notification was received.
+ * @param completionHandler The completion handler.
+ */
+- (void)appReceivedActionWithIdentifier:(NSString *)identifier
+                           notification:(NSDictionary *)notification
+                           responseInfo:(nullable NSDictionary *)responseInfo
+                       applicationState:(UIApplicationState)state
+                      completionHandler:(void (^)())completionHandler;
 
 @end
+
+NS_ASSUME_NONNULL_END

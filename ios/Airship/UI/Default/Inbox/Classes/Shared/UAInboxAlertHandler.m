@@ -1,5 +1,5 @@
 /*
- Copyright 2009-2013 Urban Airship Inc. All rights reserved.
+ Copyright 2009-2015 Urban Airship Inc. All rights reserved.
 
  Redistribution and use in source and binary forms, with or without
  modification, are permitted provided that the following conditions are met:
@@ -7,9 +7,9 @@
  1. Redistributions of source code must retain the above copyright notice, this
  list of conditions and the following disclaimer.
 
- 2. Redistributions in binaryform must reproduce the above copyright notice,
+ 2. Redistributions in binary form must reproduce the above copyright notice,
  this list of conditions and the following disclaimer in the documentation
- and/or other materials provided withthe distribution.
+ and/or other materials provided with the distribution.
 
  THIS SOFTWARE IS PROVIDED BY THE URBAN AIRSHIP INC ``AS IS'' AND ANY EXPRESS OR
  IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
@@ -23,12 +23,12 @@
  ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#import "UAInbox.h"
-#import "UAInboxAlertHandler.h"
-#import "UAInboxUI.h"
+#import "UACommon.h"
 
-#import "UAInboxPushHandler.h"
-#import "UAInboxMessageList.h"
+#import "UAInboxAlertHandler.h"
+#import "UAInboxLocalization.h"
+
+UA_SUPPRESS_UI_DEPRECATION_WARNINGS
 
 @interface UAInboxAlertHandler()
 @property(nonatomic, copy) UAInboxAlertHandlerViewBlock viewBlock;
@@ -36,7 +36,7 @@
 
 @implementation UAInboxAlertHandler
 
-- (id)init {
+- (instancetype)init {
     self = [super init];
     if (self) {
 
@@ -57,9 +57,8 @@
     [self.notificationAlert dismissWithClickedButtonIndex:0 animated:NO];
 }
 
-- (void)alertView:(UIAlertView *)alertView clickedButtonAtIndex:(NSInteger)buttonIndex {
-
-	if (buttonIndex != alertView.cancelButtonIndex) {
+- (void)alertView:(UIAlertView *)alertView didDismissWithButtonIndex:(NSInteger)buttonIndex {
+    if (buttonIndex != alertView.cancelButtonIndex) {
         self.viewBlock();
     }
 
@@ -73,11 +72,11 @@
     self.notificationAlert = nil;
 
     /* display a new alert */
-	self.notificationAlert = [[UIAlertView alloc] initWithTitle:UA_INBOX_TR(@"UA_New_Message_Available_Title")
+    self.notificationAlert = [[UIAlertView alloc] initWithTitle:UAInboxLocalizedString(@"UA_New_Message_Available_Title")
                                                         message:message
                                                        delegate:self
-                                              cancelButtonTitle:UA_INBOX_TR(@"UA_OK")
-                                              otherButtonTitles:UA_INBOX_TR(@"UA_View"),
+                                              cancelButtonTitle:UAInboxLocalizedString(@"UA_OK")
+                                              otherButtonTitles:UAInboxLocalizedString(@"UA_View"),
                               nil];
     [self.notificationAlert show];
 

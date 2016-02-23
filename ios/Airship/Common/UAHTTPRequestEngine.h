@@ -1,6 +1,5 @@
-
 /*
- Copyright 2009-2013 Urban Airship Inc. All rights reserved.
+ Copyright 2009-2015 Urban Airship Inc. All rights reserved.
 
  Redistribution and use in source and binary forms, with or without
  modification, are permitted provided that the following conditions are met:
@@ -8,11 +7,11 @@
  1. Redistributions of source code must retain the above copyright notice, this
  list of conditions and the following disclaimer.
 
- 2. Redistributions in binaryform must reproduce the above copyright notice,
+ 2. Redistributions in binary form must reproduce the above copyright notice,
  this list of conditions and the following disclaimer in the documentation
- and/or other materials provided withthe distribution.
+ and/or other materials provided with the distribution.
 
- THIS SOFTWARE IS PROVIDED BY THE URBAN AIRSHIP INC``AS IS'' AND ANY EXPRESS OR
+ THIS SOFTWARE IS PROVIDED BY THE URBAN AIRSHIP INC ``AS IS'' AND ANY EXPRESS OR
  IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
  MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO
  EVENT SHALL URBAN AIRSHIP INC OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
@@ -32,6 +31,8 @@
 #import <Foundation/Foundation.h>
 #import "UAHTTPConnection.h"
 
+NS_ASSUME_NONNULL_BEGIN
+
 typedef BOOL (^UAHTTPRequestEngineWhereBlock)(UAHTTPRequest *request);
 typedef void (^UAHTTPRequestEngineSuccessBlock)(UAHTTPRequest *request, NSUInteger lastDelay);
 typedef void (^UAHTTPRequestEngineFailureBlock)(UAHTTPRequest *request, NSUInteger lastDelay);
@@ -46,13 +47,13 @@ typedef void (^UAHTTPRequestEngineFailureBlock)(UAHTTPRequest *request, NSUInteg
 /**
  * Default initializer.
  */
-- (id)init;
+- (instancetype)init;
 
 /**
  * Initializer with argument for custom NSOperationQueue.
  * @param queue A custom NSOperationQueue
  */
-- (id)initWithQueue:(NSOperationQueue *)queue;
+- (instancetype)initWithQueue:(NSOperationQueue *)queue;
 
 /**
  * Enqueues a request for immediate or pending execution.
@@ -85,34 +86,35 @@ typedef void (^UAHTTPRequestEngineFailureBlock)(UAHTTPRequest *request, NSUInteg
  *
  * Defaults to 1.
  */
-@property(nonatomic, assign) NSUInteger maxConcurrentRequests;
+@property (nonatomic, assign) NSUInteger maxConcurrentRequests;
 
 /**
  * The initial delay interval in seconds, to be used in retry backoff sequences. 
  *
  * Defaults to 30 seconds.
  */
-@property(nonatomic, assign) NSUInteger initialDelayIntervalInSeconds;
+@property (nonatomic, assign) NSUInteger initialDelayIntervalInSeconds;
 
 /**
  * The maximum delay interval in seconds, to be used in retry backoff sequences. 
  *
  * Defaults to 300 seconds.
  */
-@property(nonatomic, assign) NSUInteger maxDelayIntervalInSeconds;
+@property (nonatomic, assign) NSUInteger maxDelayIntervalInSeconds;
 
 /**
  * The multiplier used to obtain new delay intervals during retry backoff sequences.
  *
  * Defaults to 2.
  */
-@property(nonatomic, assign) NSUInteger backoffFactor;
+@property (nonatomic, assign) NSUInteger backoffFactor;
 
 
 /**
  * The operation queue used for running registrations.
  */
-@property(nonatomic, readonly, strong) NSOperationQueue *queue;
-
+@property (nonatomic, readonly, strong) NSOperationQueue *queue;
 
 @end
+
+NS_ASSUME_NONNULL_END

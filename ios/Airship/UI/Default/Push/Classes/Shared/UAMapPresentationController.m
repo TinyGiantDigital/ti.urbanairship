@@ -1,5 +1,5 @@
 /*
- Copyright 2009-2013 Urban Airship Inc. All rights reserved.
+ Copyright 2009-2015 Urban Airship Inc. All rights reserved.
  
  Redistribution and use in source and binary forms, with or without
  modification, are permitted provided that the following conditions are met:
@@ -7,11 +7,11 @@
  1. Redistributions of source code must retain the above copyright notice, this
  list of conditions and the following disclaimer.
  
- 2. Redistributions in binaryform must reproduce the above copyright notice,
+ 2. Redistributions in binary form must reproduce the above copyright notice,
  this list of conditions and the following disclaimer in the documentation
- and/or other materials provided withthe distribution.
+ and/or other materials provided with the distribution.
  
- THIS SOFTWARE IS PROVIDED BY THE URBAN AIRSHIP INC``AS IS'' AND ANY EXPRESS OR
+ THIS SOFTWARE IS PROVIDED BY THE URBAN AIRSHIP INC ``AS IS'' AND ANY EXPRESS OR
  IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
  MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO
  EVENT SHALL URBAN AIRSHIP INC OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
@@ -22,18 +22,17 @@
  OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
  ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-#import "UAMapPresentationController.h"
-#import "UAGlobal.h"
-#import "UALocationDemoAnnotation.h"
-#import "UALocationService.h"
-#import "UAGlobal.h"
 
+#import "UACommon.h"
+
+#import "UAMapPresentationController.h"
+#import "UALocationDemoAnnotation.h"
 @implementation UAMapPresentationController
 
 #pragma mark -
 #pragma mark Memory
 
-
+UA_SUPPRESS_UI_DEPRECATION_WARNINGS
 
 #pragma mark -
 #pragma mark View Cycle
@@ -49,24 +48,9 @@
     self.navigationItem.rightBarButtonItem = self.rightButton;
 }
 
-- (void)viewDidUnload
-{
-    self.mapView = nil;
-    self.rightButton = nil;
-    [super viewDidUnload];
-}
-
 - (void)viewWillDisappear:(BOOL)animated {
     self.mapView.delegate = nil; // delegate is set in xib
     [super viewWillDisappear:animated];
-}
-
-#pragma mark -
-#pragma mark Autorotation
-
-- (BOOL)shouldAutorotateToInterfaceOrientation:(UIInterfaceOrientation)interfaceOrientation
-{
-    return (interfaceOrientation != UIInterfaceOrientationPortraitUpsideDown);
 }
 
 #pragma mark -
@@ -94,10 +78,11 @@
 
 - (IBAction)rightBarButtonPressed:(id)sender {
     UA_LDEBUG(@"Right bar button pressed");
-    // The Map                   
-    if (self.mapView.annotations.count > 1) {
+    // The Map
+    MKMapView *strongMapView = self.mapView;
+    if (strongMapView.annotations.count > 1) {
         UA_LDEBUG(@"Removing annotations");
-        [self.mapView removeAnnotations:self.annotations];
+        [strongMapView removeAnnotations:self.annotations];
         self.rightButton.title = @"+Pin";
     }
     else {

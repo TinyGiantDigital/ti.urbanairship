@@ -6,13 +6,18 @@
 
 #import "TiModule.h"
 
-@interface TiUrbanairshipModule : TiModule
-{
-	BOOL initialized;
-	BOOL autoResetBadge;
-}
+#import "AirshipLib.h"
+#import "UAConfig.h"
+#import "UAPush.h"
 
-@property (readonly, nonatomic) BOOL notificationsEnabled;
+#import "UAInboxPushHandler.h"
+#import "UAInbox.h"
+#import "UAInboxMessageList.h"
+#import "UAPushNotificationHandler.h"
+
+@interface TiUrbanairshipModule : TiModule<UAInboxDelegate,UAPushNotificationDelegate, UARegistrationDelegate>
+
 @property (readwrite, nonatomic) BOOL autoResetBadge;
+@property(nonatomic,readwrite,getter=isInitialized) BOOL initialized;
 
 @end

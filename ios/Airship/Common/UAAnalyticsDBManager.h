@@ -1,5 +1,5 @@
 /*
- Copyright 2009-2013 Urban Airship Inc. All rights reserved.
+ Copyright 2009-2015 Urban Airship Inc. All rights reserved.
 
  Redistribution and use in source and binary forms, with or without
  modification, are permitted provided that the following conditions are met:
@@ -7,11 +7,11 @@
  1. Redistributions of source code must retain the above copyright notice, this
  list of conditions and the following disclaimer.
 
- 2. Redistributions in binaryform must reproduce the above copyright notice,
+ 2. Redistributions in binary form must reproduce the above copyright notice,
  this list of conditions and the following disclaimer in the documentation
- and/or other materials provided withthe distribution.
+ and/or other materials provided with the distribution.
 
- THIS SOFTWARE IS PROVIDED BY THE URBAN AIRSHIP INC``AS IS'' AND ANY EXPRESS OR
+ THIS SOFTWARE IS PROVIDED BY THE URBAN AIRSHIP INC ``AS IS'' AND ANY EXPRESS OR
  IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
  MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO
  EVENT SHALL URBAN AIRSHIP INC OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
@@ -29,26 +29,89 @@
 @class UAEvent;
 @class UASQLite;
 
+NS_ASSUME_NONNULL_BEGIN
+
+/**
+* Primary interface for working with the analytics DB
+*/
 @interface UAAnalyticsDBManager : NSObject {
     dispatch_queue_t dbQueue;
 }
 
+/**
+* Analytics DB
+*/
 @property (nonatomic, strong) UASQLite *db;
 
-SINGLETON_INTERFACE(UAAnalyticsDBManager);
+/**
+ * Gets the total size in bytes of the sqlite DB
+ *
+ * @return Integer representing the total size in bytes of sqlite DB
+ */
+@property (nonatomic, assign, readonly) NSUInteger sizeInBytes;
 
+/**
+ * Gets count of analytics events stored in sqlite DB
+ *
+ * @return Integer count of total stored analytics events
+ */
+@property (nonatomic, assign, readonly) NSUInteger eventCount;
+
+/**
+ * Resets the database
+ */
 - (void)resetDB;
 
-- (void)addEvent:(UAEvent *)event withSession:(NSDictionary *)session;
-- (NSArray *)getEvents:(NSUInteger)max;
-- (NSArray *)getEventByEventId:(NSString *)event_id;
+/**
+ * Adds analytics event to sqlite DB
+ *
+ * @param event UAEvent to add
+ * @param sessionID Session ID string
+ */
+- (void)addEvent:(UAEvent *)event withSessionID:(NSString *)sessionID;
 
-- (void)deleteEvent:(NSNumber *)eventId;
+/**
+ * Gets analytics events via sqlite query
+ *
+ * @param max Max number of events. The value will be clipped to INT32_MAX.
+ * @return An array of analytics events from the DB
+ */
+- (NSArray *)getEvents:(NSUInteger)max;
+
+/**
+ * Gets analytics events via sqlite query using event ID
+ *
+ * @param eventID Analytics event ID string
+ * @return An array of analytics events from the DB
+ */
+- (NSArray *)getEventByEventID:(NSString *)eventID;
+
+/**
+ * Deletes individual analytics events from sqlite DB using event ID
+ *
+ * @param eventID Analytics event ID string
+ */
+- (void)deleteEvent:(NSNumber *)eventID;
+
+/**
+ * Deletes an array of analytics events from sqlite DB
+ *
+ * @param events Array of analytics events to delete
+ */
 - (void)deleteEvents:(NSArray *)events;
-- (void)deleteBySessionId:(NSString *)sessionId;
+
+/**
+ * Deletes analytics events from sqlite DB using session ID
+ *
+ * @param sessionID Session ID string of the events to be deleted
+ */
+- (void)deleteBySessionID:(NSString *)sessionID;
+
+/**
+ * Deletes analytics events from sqlite DB using oldest session ID
+ */
 - (void)deleteOldestSession;
 
-- (NSInteger)eventCount;
-- (NSInteger)sizeInBytes;
-
 @end
+
+NS_ASSUME_NONNULL_END

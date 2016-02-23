@@ -1,5 +1,5 @@
 /*
- Copyright 2009-2013 Urban Airship Inc. All rights reserved.
+ Copyright 2009-2015 Urban Airship Inc. All rights reserved.
  
  Redistribution and use in source and binary forms, with or without
  modification, are permitted provided that the following conditions are met:
@@ -7,11 +7,11 @@
  1. Redistributions of source code must retain the above copyright notice, this
  list of conditions and the following disclaimer.
  
- 2. Redistributions in binaryform must reproduce the above copyright notice,
+ 2. Redistributions in binary form must reproduce the above copyright notice,
  this list of conditions and the following disclaimer in the documentation
- and/or other materials provided withthe distribution.
+ and/or other materials provided with the distribution.
  
- THIS SOFTWARE IS PROVIDED BY THE URBAN AIRSHIP INC``AS IS'' AND ANY EXPRESS OR
+ THIS SOFTWARE IS PROVIDED BY THE URBAN AIRSHIP INC ``AS IS'' AND ANY EXPRESS OR
  IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
  MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO
  EVENT SHALL URBAN AIRSHIP INC OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
@@ -23,60 +23,46 @@
  ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#import <Foundation/Foundation.h>
+#import <UIKit/UIKit.h>
+#import <CoreTelephony/CTTelephonyNetworkInfo.h>
+#import <CoreTelephony/CTCarrier.h>
 
-#define kEventAppInitSize               450//397 w/ push id, no inbox id
-#define kEventAppExitSize               200//136 w/ only network type
-#define kEventDeviceRegistrationSize    200//153 w/ only user info
-#define kEventPushReceivedSize          200//160 w/ uuid push info
-#define kEventAppActiveSize             120
-#define kEventAppInactiveSize           120
 
+NS_ASSUME_NONNULL_BEGIN
+
+/**
+ * This base class encapsulates analytics events.
+ */
 @interface UAEvent : NSObject
 
+/**
+ * The time the event was created.
+ */
 @property (nonatomic, readonly, copy) NSString *time;
-@property (nonatomic, readonly, copy) NSString *event_id;
-@property (nonatomic, readonly, strong) NSMutableDictionary *data;
-
-+ (id)event;
-- (id)initWithContext:(NSDictionary *)context;
-+ (id)eventWithContext:(NSDictionary *)context;
-- (NSString *)getType;
-- (void)gatherData:(NSDictionary *)context;
-- (NSUInteger)getEstimatedSize;
-- (void)addDataFromSessionForKey:(NSString *)dataKey;
-- (void)addDataWithValue:(id)value forKey:(NSString *)key;
-@end
-
-@interface UAEventAppInit : UAEvent
-@end
-
-@interface UAEventAppForeground : UAEventAppInit
-@end
-
-@interface UAEventAppExit : UAEvent
-@end
-
-@interface UAEventAppBackground : UAEventAppExit
-@end
-
-@interface UAEventDeviceRegistration : UAEvent
-@end
-
-@interface UAEventPushReceived : UAEvent
-@end
 
 /**
- * This event is recorded when the app becomes active: on foreground
- * or when resuming after losing focus for any of the reasons that would
- * trigger a UAEventAppInactive event.
+ * The unique event ID.
  */
-@interface UAEventAppActive : UAEvent
-@end
+@property (nonatomic, readonly, copy) NSString *eventID;
 
 /**
- * This event is recorded when the app resigns its active state. This will happen
- * prior to backgrounding and when there is an incoming call, the user opens the
- * notification center in iOS5+, the user launches the task-bar, etc.
+ * The event's data.
  */
-@interface UAEventAppInactive : UAEvent
+@property (nonatomic, readonly, strong) NSDictionary *data;
+
+/**
+ * The event's type.
+ */
+@property (nonatomic, readonly) NSString *eventType;
+
+
+/**
+ * Checks if the event is valid. Invalid events will be dropped.
+ * @return YES if the event is valid.
+ */
+- (BOOL)isValid;
+
 @end
+
+NS_ASSUME_NONNULL_END

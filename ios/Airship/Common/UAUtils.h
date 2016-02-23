@@ -1,5 +1,5 @@
 /*
- Copyright 2009-2013 Urban Airship Inc. All rights reserved.
+ Copyright 2009-2015 Urban Airship Inc. All rights reserved.
 
  Redistribution and use in source and binary forms, with or without
  modification, are permitted provided that the following conditions are met:
@@ -7,9 +7,9 @@
  1. Redistributions of source code must retain the above copyright notice, this
  list of conditions and the following disclaimer.
 
- 2. Redistributions in binaryform must reproduce the above copyright notice,
+ 2. Redistributions in binary form must reproduce the above copyright notice,
  this list of conditions and the following disclaimer in the documentation
- and/or other materials provided withthe distribution.
+ and/or other materials provided with the distribution.
 
  THIS SOFTWARE IS PROVIDED BY THE URBAN AIRSHIP INC ``AS IS'' AND ANY EXPRESS OR
  IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
@@ -24,8 +24,13 @@
  */
 
 #import <Foundation/Foundation.h>
+#import <UIKit/UIKit.h>
+#import <SystemConfiguration/SCNetworkReachability.h>
+
 
 @class UAHTTPRequest;
+
+NS_ASSUME_NONNULL_BEGIN
 
 /**
  * The UAUtils object provides an interface for utility methods.
@@ -33,22 +38,8 @@
 @interface UAUtils : NSObject
 
 ///---------------------------------------------------------------------------------------
-/// @name Digest/Hash Utils
-///---------------------------------------------------------------------------------------
-
-+ (NSString *)md5:(NSString *)sourceString;
-
-///---------------------------------------------------------------------------------------
 /// @name Device ID Utils
 ///---------------------------------------------------------------------------------------
-
-/**
- * Generate a UUID.
- * Uses CFUUID to generate and return a UUID.
- *
- * @return A UUID.
- */
-+ (NSString *)UUID;
 
 /**
  * Get the device model name. e.g., iPhone3,1
@@ -64,18 +55,9 @@
 + (NSString *)deviceID;
 
 ///---------------------------------------------------------------------------------------
-/// @name URL Encoding
-///---------------------------------------------------------------------------------------
-
-+ (NSString *)urlEncodedStringWithString:(NSString *)string encoding:(NSStringEncoding)encoding;
-
-///---------------------------------------------------------------------------------------
 /// @name UAHTTP Authenticated Request Helpers
 ///---------------------------------------------------------------------------------------
 
-+ (UAHTTPRequest *)UAHTTPUserRequestWithURL:(NSURL *)url method:(NSString *)method;
-
-+ (UAHTTPRequest *)UAHTTPRequestWithURL:(NSURL *)url method:(NSString *)method;
 
 + (void)logFailedRequest:(UAHTTPRequest *)request withMessage:(NSString *)message;
 
@@ -87,6 +69,16 @@
  * @return An HTTP Basic Auth header string value for the user's credentials.
  */
 + (NSString *)userAuthHeaderString;
+
+
+/**
+ * Returns a basic auth header string.
+ *
+ * The return value takes the form of: `Basic [Base64 Encoded "username:password"]`
+ *
+ * @return An HTTP Basic Auth header string value for the app's credentials.
+ */
++ (NSString *)appAuthHeaderString;
 
 ///---------------------------------------------------------------------------------------
 /// @name UI Formatting Helpers
@@ -104,12 +96,24 @@
 
 /**
  * Creates an ISO dateFormatter (UTC) with the following attributes:
- * locale set to 'en_US_POSIX', timestyle set to 'NSDATEFormatterFullStyle',
+ * locale set to 'en_US_POSIX', timestyle set to 'NSDateFormatterFullStyle',
  * date format set to 'yyyy-MM-dd HH:mm:ss'.
  *
  * @return A DateFormatter with the default attributes.
  */
 + (NSDateFormatter *)ISODateFormatterUTC;
+
+/**
+ * Creates an ISO dateFormatter (UTC) with the following attributes:
+ * locale set to 'en_US_POSIX', timestyle set to 'NSDateFormatterFullStyle',
+ * date format set to 'yyyy-MM-dd'T'HH:mm:ss'. The formatter returned by this method 
+ * is identical to that of `ISODateFormatterUTC`, except that the format matches the optional 
+ * `T` delimiter between date and time.
+ *
+ * @return A DateFormatter with the default attributes, matching the optional `T` delimiter.
+ */
++ (NSDateFormatter *)ISODateFormatterUTCWithDelimiter;
+
 
 ///---------------------------------------------------------------------------------------
 /// @name File management
@@ -123,5 +127,31 @@
  */
 + (BOOL)addSkipBackupAttributeToItemAtURL:(NSURL *)url;
 
+/**
+ * Returns the main window for the app. This window will
+ * be positioned underneath any other windows added and removed at runtime, by
+ * classes such a UIAlertView or UIActionSheet.
+ *
+ * @return The main window, or `nil` if the window cannot be found.
+ */
++ (nullable UIWindow *)mainWindow;
+
+/**
+ * A utility method that grabs the top-most view controller for the main application window.
+ * May return nil if a suitable view controller cannot be found.
+ * @return The top-most view controller or `nil` if controller cannot be found.
+ */
++ (nullable UIViewController *)topController;
+
+/**
+ * Returns the main window's bounds, in orientation-dependent coordinates.
+ * As this is the default behavior in iOS 8, the method is intended as a
+ * utility for backwards compatibility.
+ *
+ * @return A CGRect representing the main window's bounds, in orientation-dependent coordinates.
+ */
++ (CGRect)orientationDependentWindowBounds;
 
 @end
+
+NS_ASSUME_NONNULL_END
