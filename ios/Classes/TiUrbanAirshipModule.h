@@ -15,7 +15,7 @@
 #import "UAInboxMessageList.h"
 #import "UAPushNotificationHandler.h"
 
-@interface TiUrbanairshipModule : TiModule<UAInboxDelegate,UAPushNotificationDelegate, UARegistrationDelegate>
+@interface TiUrbanairshipModule : TiModule<UAInboxDelegate, UAPushNotificationDelegate, UARegistrationDelegate>
 
 @property (readwrite, nonatomic) BOOL autoResetBadge;
 @property(nonatomic,readwrite,getter=isInitialized) BOOL initialized;

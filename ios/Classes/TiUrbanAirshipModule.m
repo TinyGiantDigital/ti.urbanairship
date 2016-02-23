@@ -109,8 +109,8 @@
     
     [self checkIfSimulator];
     
-    [UAirship inbox].delegate = self;
-    [UAirship push].pushNotificationDelegate = self;
+    [[UAirship inbox] setDelegate:self];
+    [[UAirship push] setPushNotificationDelegate:self];
     [[UAirship push] setUserPushNotificationsEnabled:YES];
 
     [self setInitialized:YES];
@@ -120,7 +120,7 @@
 
 -(void)registerDevice:(id)arg
 {
-    if ([self isInitialized] == NO) {
+    if (![self isInitialized]) {
         [self initialize];
     }
     
@@ -155,7 +155,7 @@
 	
 -(void)unregisterDevice:(id)unused
 {
-    if ([self isInitialized] == NO) {
+    if (![self isInitialized]) {
         [self initialize];
     }
 
@@ -174,7 +174,7 @@
 	
 	NSLog(@"[DEBUG] [Ti.UrbanAirship] Handle push notification.");
 
-    if ([self isInitialized] == NO) {
+    if (![self isInitialized]) {
         [self initialize];
     }
 
@@ -184,7 +184,7 @@
 
 -(BOOL)notificationsEnabled
 {
-    return [[UIApplication sharedApplication] isRegisteredForRemoteNotifications] == YES;
+    return [[UIApplication sharedApplication] isRegisteredForRemoteNotifications];
 }
 
 -(BOOL)isFlying
@@ -195,7 +195,7 @@
 
 -(void)updateUAServer
 {
-    if ([self isInitialized] == NO) {
+    if (![self isInitialized]) {
         [self initialize];
     }
 
@@ -204,7 +204,6 @@
 
 -(void)handleAutoBadgeReset
 {
-    
     if ([self autoResetBadge] == YES) {
         [[UAirship push] resetBadge];
         [self updateUAServer];
