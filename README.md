@@ -3,6 +3,11 @@ ti.urbanairship [![Build Status](https://travis-ci.org/appcelerator-modules/ti.u
 
 This is the UrbanAirship Module for Titanium.
 
+
+*Direct copy of Appceleeators module, with the inclusion of pathch #13 from Hannesmann* https://github.com/hansemannn/ti.urbanairship.git
+
+
+
 Interested in contributing? Read the [contributors/committer's](https://wiki.appcelerator.org/display/community/Home) guide.
 
 ## Legal
