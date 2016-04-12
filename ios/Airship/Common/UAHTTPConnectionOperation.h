@@ -1,6 +1,5 @@
-
 /*
- Copyright 2009-2013 Urban Airship Inc. All rights reserved.
+ Copyright 2009-2015 Urban Airship Inc. All rights reserved.
 
  Redistribution and use in source and binary forms, with or without
  modification, are permitted provided that the following conditions are met:
@@ -8,11 +7,11 @@
  1. Redistributions of source code must retain the above copyright notice, this
  list of conditions and the following disclaimer.
 
- 2. Redistributions in binaryform must reproduce the above copyright notice,
+ 2. Redistributions in binary form must reproduce the above copyright notice,
  this list of conditions and the following disclaimer in the documentation
- and/or other materials provided withthe distribution.
+ and/or other materials provided with the distribution.
 
- THIS SOFTWARE IS PROVIDED BY THE URBAN AIRSHIP INC``AS IS'' AND ANY EXPRESS OR
+ THIS SOFTWARE IS PROVIDED BY THE URBAN AIRSHIP INC ``AS IS'' AND ANY EXPRESS OR
  IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
  MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO
  EVENT SHALL URBAN AIRSHIP INC OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
@@ -27,6 +26,8 @@
 #import <Foundation/Foundation.h>
 #import "UAHTTPConnection.h"
 
+NS_ASSUME_NONNULL_BEGIN
+
 /**
  * Represents a UAHTTPConnection as an abstract unit of work, which can be
  * run in serial or parallel in an NSOperationQueue.  All connection success and failure
@@ -40,7 +41,7 @@
  * @param successBlock A UAHTTPConnectionSuccessBlock which will be called if the resulting connection succeeds.
  * @param failureBlock A UAHTTPConnectionFailureBlock which will be called if the resulting connection fails.
  */
-- (id)initWithRequest:(UAHTTPRequest *)request
+- (instancetype)initWithRequest:(UAHTTPRequest *)request
             onSuccess:(UAHTTPConnectionSuccessBlock)successBlock
             onFailure:(UAHTTPConnectionFailureBlock)failureBlock;
 
@@ -50,8 +51,10 @@
  * @param successBlock A UAHTTPConnectionSuccessBlock which will be called if the resulting connection succeeds.
  * @param failureBlock A UAHTTPConnectionFailureBlock which will be called if the resulting connection fails.
  */
-+ (id)operationWithRequest:(UAHTTPRequest *)request
++ (instancetype)operationWithRequest:(UAHTTPRequest *)request
                  onSuccess:(UAHTTPConnectionSuccessBlock)successBlock
                  onFailure:(UAHTTPConnectionFailureBlock)failureBlock;
 
 @end
+
+NS_ASSUME_NONNULL_END

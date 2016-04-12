@@ -1,5 +1,5 @@
 /*
- Copyright 2009-2013 Urban Airship Inc. All rights reserved.
+ Copyright 2009-2015 Urban Airship Inc. All rights reserved.
 
  Redistribution and use in source and binary forms, with or without
  modification, are permitted provided that the following conditions are met:
@@ -7,11 +7,11 @@
  1. Redistributions of source code must retain the above copyright notice, this
  list of conditions and the following disclaimer.
 
- 2. Redistributions in binaryform must reproduce the above copyright notice,
+ 2. Redistributions in binary form must reproduce the above copyright notice,
  this list of conditions and the following disclaimer in the documentation
- and/or other materials provided withthe distribution.
+ and/or other materials provided with the distribution.
 
- THIS SOFTWARE IS PROVIDED BY THE URBAN AIRSHIP INC``AS IS'' AND ANY EXPRESS OR
+ THIS SOFTWARE IS PROVIDED BY THE URBAN AIRSHIP INC ``AS IS'' AND ANY EXPRESS OR
  IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
  MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO
  EVENT SHALL URBAN AIRSHIP INC OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
@@ -23,13 +23,10 @@
  ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#import "UAPushSettingsAliasViewController.h"
-#import "UAPush.h"
+#import "UACommon.h"
 
-#if __IPHONE_OS_VERSION_MAX_ALLOWED < 60000
-// This is available in iOS 6.0 and later, define it for older versions
-#define NSLineBreakByWordWrapping 0
-#endif
+#import "UAPushSettingsAliasViewController.h"
+#import "NSString+UASizeWithFontCompatibility.h"
 
 enum {
     SectionDesc        = 0,
@@ -54,20 +51,25 @@ enum {
     [super viewDidLoad];
 
     self.title = @"Device Alias";
-    
-    self.aliasField.text = [UAPush shared].alias;
-    self.aliasField.clearsOnBeginEditing = YES;
-    self.aliasField.accessibilityLabel = @"Edit Alias";
+
+    UITextField *strongAliasField = self.aliasField;
+
+    // Don't clear the text field pre-emptively
+    strongAliasField.clearsOnBeginEditing = NO;
+    strongAliasField.accessibilityLabel = @"Edit Alias";
     self.textLabel.text = @"Assign an alias to a device or a group of devices to simplify "
                      @"the process of sending notifications.";
 }
 
-- (BOOL)shouldAutorotateToInterfaceOrientation:(UIInterfaceOrientation)interfaceOrientation {
-    return YES;
+- (void)viewWillAppear:(BOOL)animated {
+    [super viewWillAppear:animated];
+    self.aliasField.text = [UAirship push].alias;
 }
 
-- (void)viewDidUnload {
-    [super viewDidUnload];
+- (void)viewWillDisappear:(BOOL)animated {
+    [super viewWillDisappear:animated];
+    // This will occur before the text field finishes on its own when popping the view controller
+    [self.view.window endEditing:animated];
 }
 
 #pragma mark -
@@ -77,7 +79,8 @@ enum {
 
 - (CGFloat)tableView:(UITableView *)tableView heightForRowAtIndexPath:(NSIndexPath *)indexPath {
     if (indexPath.section == SectionDesc) {
-        CGFloat height = [self.textLabel.text sizeWithFont:self.textLabel.font
+        UILabel *strongTextLabel = self.textLabel;
+        CGFloat height = [strongTextLabel.text uaSizeWithFont:strongTextLabel.font
                           constrainedToSize:CGSizeMake(300, 1500)
                               lineBreakMode:NSLineBreakByWordWrapping].height;
         return height + kCellPaddingHeight * 2;
@@ -129,20 +132,20 @@ enum {
 
 - (void)textFieldDidEndEditing:(UITextField *)textField {
     
-	NSString *newAlias = self.aliasField.text;
-	
-	// Trim leading whitespace
-	NSRange range = [newAlias rangeOfString:@"^\\s*" options:NSRegularExpressionSearch];
-	NSString *result = [newAlias stringByReplacingCharactersInRange:range withString:@""];
-	
+    NSString *newAlias = self.aliasField.text;
+
+    // Trim leading whitespace
+    NSRange range = [newAlias rangeOfString:@"^\\s*" options:NSRegularExpressionSearch];
+    NSString *result = [newAlias stringByReplacingCharactersInRange:range withString:@""];
+
     if ([result length] != 0) {
-        [[UAPush shared] setAlias:result];
-        [[UAPush shared] updateRegistration];
+        [[UAirship push] setAlias:result];
+        [[UAirship push] updateRegistration];
     } else {
-		textField.text = nil;
-		[[UAPush shared] setAlias:nil];
-        [[UAPush shared] updateRegistration];
-	}
+        textField.text = nil;
+        [[UAirship push] setAlias:nil];
+        [[UAirship push] updateRegistration];
+    }
 }
 
 @end

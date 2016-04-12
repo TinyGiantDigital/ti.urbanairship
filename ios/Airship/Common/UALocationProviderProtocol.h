@@ -1,5 +1,5 @@
 /*
- Copyright 2009-2013 Urban Airship Inc. All rights reserved.
+ Copyright 2009-2015 Urban Airship Inc. All rights reserved.
  
  Redistribution and use in source and binary forms, with or without
  modification, are permitted provided that the following conditions are met:
@@ -7,11 +7,11 @@
  1. Redistributions of source code must retain the above copyright notice, this
  list of conditions and the following disclaimer.
  
- 2. Redistributions in binaryform must reproduce the above copyright notice,
+ 2. Redistributions in binary form must reproduce the above copyright notice,
  this list of conditions and the following disclaimer in the documentation
- and/or other materials provided withthe distribution.
+ and/or other materials provided with the distribution.
  
- THIS SOFTWARE IS PROVIDED BY THE URBAN AIRSHIP INC``AS IS'' AND ANY EXPRESS OR
+ THIS SOFTWARE IS PROVIDED BY THE URBAN AIRSHIP INC ``AS IS'' AND ANY EXPRESS OR
  IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
  MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO
  EVENT SHALL URBAN AIRSHIP INC OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
@@ -25,6 +25,8 @@
 
 /** Required for building a location provider */
 #import "UALocationCommonValues.h"
+
+NS_ASSUME_NONNULL_BEGIN
 
 @protocol UALocationProviderProtocol <NSObject>
 @required
@@ -56,20 +58,16 @@
 /**
  * The UALocationProviderDelegate that will receive updates.
  */
-@property (nonatomic, assign) id delegate;
+@property (nonatomic, assign, nullable) id delegate;
 
 /**
- * The purpose associated with the CLLocationManager that is displayed to the user when
- * permission for location services is required.
- * @return The location manager purpose as an NSString.
+ * Purpose for location services shown to user
+ * when prompted to allow location services to begin. The default value
+ * is the NSLocationUsageDescription listed in the info.plist. This value cannot be set
+ * programatically.
+ * @return An NSString with the current purpose
  */
-- (NSString *)purpose;
-
-/**
- * Set the location manager purpose.
- * @param newPurpose The new purpose to set.
- */
-- (void)setPurpose:(NSString *)newPurpose;
+- (nullable NSString *)purpose;
 
 /**
  * Starts updating location.
@@ -80,4 +78,8 @@
  * Stops providing location updates.
  */
 - (void)stopReportingLocation;
+
 @end
+
+NS_ASSUME_NONNULL_END
+

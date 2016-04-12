@@ -1,5 +1,5 @@
 /*
- Copyright 2009-2013 Urban Airship Inc. All rights reserved.
+ Copyright 2009-2015 Urban Airship Inc. All rights reserved.
  
  Redistribution and use in source and binary forms, with or without
  modification, are permitted provided that the following conditions are met:
@@ -7,11 +7,11 @@
  1. Redistributions of source code must retain the above copyright notice, this
  list of conditions and the following disclaimer.
  
- 2. Redistributions in binaryform must reproduce the above copyright notice,
+ 2. Redistributions in binary form must reproduce the above copyright notice,
  this list of conditions and the following disclaimer in the documentation
- and/or other materials provided withthe distribution.
+ and/or other materials provided with the distribution.
  
- THIS SOFTWARE IS PROVIDED BY THE URBAN AIRSHIP INC``AS IS'' AND ANY EXPRESS OR
+ THIS SOFTWARE IS PROVIDED BY THE URBAN AIRSHIP INC ``AS IS'' AND ANY EXPRESS OR
  IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
  MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO
  EVENT SHALL URBAN AIRSHIP INC OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
@@ -23,14 +23,10 @@
  ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#import "UAPushSettingsAddTagViewController.h"
-#import "UAPush.h"
-#import "UATagUtils.h"
+#import "UACommon.h"
 
-#if __IPHONE_OS_VERSION_MAX_ALLOWED < 60000
-// This is available in iOS 6.0 and later, define it for older versions
-#define NSLineBreakByWordWrapping 0
-#endif
+#import "UAPushSettingsAddTagViewController.h"
+#import "NSString+UASizeWithFontCompatibility.h"
 
 enum TagSections {
     TagSectionCustom = 0,
@@ -66,14 +62,6 @@ enum TagSections {
     self.navigationItem.rightBarButtonItem = self.saveButton;
 }
 
-- (BOOL)shouldAutorotateToInterfaceOrientation:(UIInterfaceOrientation)interfaceOrientation {
-    return YES;
-}
-
-- (void)viewDidUnload {
-    [super viewDidUnload];
-}
-
 #pragma mark -
 #pragma mark UITableViewDelegate
 
@@ -84,10 +72,10 @@ enum TagSections {
     if (indexPath.section == TagSectionCustom) {
         text = @"Custom Tag";
     } else {
-        text = [self.presetTags objectAtIndex:indexPath.row];
+        text = [self.presetTags objectAtIndex:(NSUInteger)indexPath.row];
     }
 
-    CGFloat height = [text sizeWithFont:self.tagField.font
+    CGFloat height = [text uaSizeWithFont:self.tagField.font
                       constrainedToSize:CGSizeMake(240, 1500)
                           lineBreakMode:NSLineBreakByWordWrapping].height;
 
@@ -97,7 +85,7 @@ enum TagSections {
 - (void)tableView:(UITableView *)view didSelectRowAtIndexPath:(NSIndexPath *)indexPath {
 
     if (indexPath.section == TagSectionPreset) {
-        [self.tagDelegate addTag:[self.presetTags objectAtIndex:indexPath.row]];
+        [self.tagDelegate addTag:[self.presetTags objectAtIndex:(NSUInteger)indexPath.row]];
         [view deselectRowAtIndexPath:indexPath animated:YES];
     }
 }
@@ -125,7 +113,7 @@ enum TagSections {
         case TagSectionCustom:
             return 1;
         case TagSectionPreset:
-            return [self.presetTags count];
+            return (NSInteger)[self.presetTags count];
         default:
             break;
     }
@@ -155,7 +143,7 @@ enum TagSections {
             
             // Configure the cell...
             
-            cell.textLabel.text = [self.presetTags objectAtIndex:indexPath.row];
+            cell.textLabel.text = [self.presetTags objectAtIndex:(NSUInteger)indexPath.row];
             cell.accessoryType = UITableViewCellAccessoryNone;
             
             return cell;
@@ -183,8 +171,9 @@ enum TagSections {
 #pragma mark Save/Cancel
 
 - (void)save:(id)sender {
-    [self.tagDelegate addTag:self.tagField.text];
-    self.tagField.text = nil;
+    UITextField *strongTagField = self.tagField;
+    [self.tagDelegate addTag:strongTagField.text];
+    strongTagField.text = nil;
 }
 
 - (void)cancel:(id)sender {
